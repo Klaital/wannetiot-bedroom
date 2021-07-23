@@ -1,0 +1,10 @@
+//
+// Created by kit on 7/23/21.
+//
+
+#ifndef WANNETIOT_BEDROOM_CONFIG_H
+#define WANNETIOT_BEDROOM_CONFIG_H
+
+#define INFLUX_WRITE_INTERVAL 5
+
+#endif //WANNETIOT_BEDROOM_CONFIG_H

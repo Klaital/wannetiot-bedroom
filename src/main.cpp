@@ -3,11 +3,14 @@
 #include <WiFiNINA.h>
 #include "secrets.h"
 #include "config.h"
+#include "httpclient.h"
+
 
 int status = WL_IDLE_STATUS;
 char ssid[] = SECRET_SSID;
 char debugbuf[1024];
 char timebuf[sizeof "2011-10-08-07:07:09Z"];
+InfluxClient influxClient;
 
 time_t last_influx_write = time(0);
 struct Sensors {
@@ -26,15 +29,33 @@ void read_wifi_strength() {
 }
 
 // record_metrics sends the metrics recorded so far to Influx if it has been long enough
+char metricbuf[16];
+Point p{};
 void record_metrics() {
     if (difftime(current_reading.timestamp, last_influx_write) < INFLUX_WRITE_INTERVAL) {
         return;
     }
-    // TODO: actually write the metrics to the Influx client
+
     strftime(timebuf, sizeof(timebuf), "%FT%TZ", gmtime(&current_reading.timestamp));
     sprintf(debugbuf, "Recording metrics (%s): temp=%f, humidity=%f, pm2.5=%f, rssi=%ld", timebuf, current_reading.temp, current_reading.humidity, current_reading.pm25, current_reading.rssi);
     Serial.println(debugbuf);
-    last_influx_write = WiFi.getTime();
+
+    // WiFi stats
+    init_point(&p);
+    set_measurement(&p, (char*)MEASUREMENT_WIFI);
+    add_tag(&p, (char*)TAG_NAME_NODE, (char*)TAG_VALUE_NODE);
+    add_tag(&p, (char*)TAG_NAME_LOCATION, (char*)TAG_VALUE_LOCATION);
+    sprintf(metricbuf, "%ld", current_reading.rssi);
+    add_field(&p, (char*)METRIC_RSSI, metricbuf);
+    add_point(&influxClient, &p); // Append the metrics to the InfluxClient's queue
+    reset_point(&p);
+
+    // TODO: get atmo metrics
+
+    // If the queue is full, run the HTTP submission
+    if (influx_send(&influxClient)) {
+        last_influx_write = WiFi.getTime();
+    }
 }
 
 void printData() {
@@ -59,6 +80,7 @@ void setup() {
     Serial.begin(9600);
     while(!Serial);
 
+    WiFi.setHostname("wannetiot-bedroom");
     while(status != WL_CONNECTED) {
         Serial.print("Attempting to connect to network: ");
         Serial.println(ssid);
@@ -74,8 +96,11 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     // TODO: initialize Influx client
-    // Set write precision to milliseconds. Leave other parameters default.
-//  influx.setWriteOptions(WriteOptions().writePrecision(WritePrecision::MS));
+    init_client(&influxClient);
+    influxClient.host = (char*)INFLUX_HOST;
+    influxClient.token = (char*)INFLUX_TOKEN;
+    influxClient.org = (char*)INFLUX_ORG;
+    influxClient.bucket = (char*)INFLUX_BUCKET;
 
     // TODO: take initial sensor readings for temperature, humidity, air quality
 //    read_atmo();

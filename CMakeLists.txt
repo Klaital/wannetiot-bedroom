@@ -30,4 +30,4 @@ add_custom_target(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_executable(Z_DUMMY_TARGET ${SRC_LIST} src/sensors.cpp include/config.h)
+add_executable(Z_DUMMY_TARGET ${SRC_LIST} src/sensors.cpp include/config.h lib/influx/httpclient.h lib/influx/influx.h lib/influx/httpclient.cpp lib/influx/point.h lib/influx/point.cpp)

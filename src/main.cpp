@@ -81,7 +81,9 @@ void printData() {
 
 void setup() {
     Serial.begin(9600);
+#ifdef DEBUG
     while(!Serial);
+#endif
 
     WiFi.setHostname("wannetiot-bedroom");
     while(status != WL_CONNECTED) {
@@ -98,7 +100,7 @@ void setup() {
     // initialize digital pin LED_BUILTIN as an output.
     pinMode(LED_BUILTIN, OUTPUT);
 
-    // TODO: initialize Influx client
+    // initialize Influx client
     init_client(&influx_client);
     influx_client.host = (char*)INFLUX_HOST;
     influx_client.token = (char*)INFLUX_TOKEN;
@@ -113,14 +115,9 @@ void setup() {
 }
 
 void loop() {
-    digitalWrite(LED_BUILTIN, LOW);
     delay(1000);
-
     // TODO: read sensors
     read_wifi_strength();
     // TODO: every-so-often, write the metrics to Influx
     record_metrics();
-
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(1000);
 }

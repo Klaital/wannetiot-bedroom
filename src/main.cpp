@@ -10,7 +10,8 @@ int status = WL_IDLE_STATUS;
 char ssid[] = SECRET_SSID;
 char debugbuf[1024];
 char timebuf[sizeof "2011-10-08-07:07:09Z"];
-InfluxClient influxClient;
+InfluxClient influx_client;
+WiFiClient wifi_client;
 
 time_t last_influx_write = time(0);
 struct Sensors {
@@ -42,18 +43,20 @@ void record_metrics() {
 
     // WiFi stats
     init_point(&p);
+    p.timestamp = WiFi.getTime();
     set_measurement(&p, (char*)MEASUREMENT_WIFI);
     add_tag(&p, (char*)TAG_NAME_NODE, (char*)TAG_VALUE_NODE);
     add_tag(&p, (char*)TAG_NAME_LOCATION, (char*)TAG_VALUE_LOCATION);
     sprintf(metricbuf, "%ld", current_reading.rssi);
     add_field(&p, (char*)METRIC_RSSI, metricbuf);
-    add_point(&influxClient, &p); // Append the metrics to the InfluxClient's queue
+    add_point(&influx_client, &p); // Append the metrics to the InfluxClient's queue
     reset_point(&p);
 
     // TODO: get atmo metrics
 
     // If the queue is full, run the HTTP submission
-    if (influx_send(&influxClient)) {
+
+    if (influx_send(&influx_client, &wifi_client)) {
         last_influx_write = WiFi.getTime();
     }
 }
@@ -96,11 +99,11 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     // TODO: initialize Influx client
-    init_client(&influxClient);
-    influxClient.host = (char*)INFLUX_HOST;
-    influxClient.token = (char*)INFLUX_TOKEN;
-    influxClient.org = (char*)INFLUX_ORG;
-    influxClient.bucket = (char*)INFLUX_BUCKET;
+    init_client(&influx_client);
+    influx_client.host = (char*)INFLUX_HOST;
+    influx_client.token = (char*)INFLUX_TOKEN;
+    influx_client.org = (char*)INFLUX_ORG;
+    influx_client.bucket = (char*)INFLUX_BUCKET;
 
     // TODO: take initial sensor readings for temperature, humidity, air quality
 //    read_atmo();

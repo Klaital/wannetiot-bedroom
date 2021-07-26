@@ -55,10 +55,8 @@ void record_metrics() {
     // TODO: get atmo metrics
 
     // If the queue is full, run the HTTP submission
-
-    if (influx_send(&influx_client, &wifi_client)) {
-        last_influx_write = WiFi.getTime();
-    }
+    influx_send(&influx_client, &wifi_client); // This will only actually do networking if the output buffer is full.
+    last_influx_write = WiFi.getTime();
 }
 
 void printData() {
@@ -115,9 +113,11 @@ void setup() {
 }
 
 void loop() {
-    delay(1000);
-    // TODO: read sensors
+//    delay(1000);
+    // read sensors
     read_wifi_strength();
+//    read_atmo();
+
     // TODO: every-so-often, write the metrics to Influx
     record_metrics();
 }

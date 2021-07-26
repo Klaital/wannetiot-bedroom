@@ -23,6 +23,12 @@ struct InfluxClient{
     char *bucket;
 };
 
+struct HttpResponse {
+    unsigned long code;
+    char status[16];
+    char body[256];
+};
+
 // init_request initializes the default values for a HttpRequest object
 void init_client(InfluxClient *c);
 
@@ -41,5 +47,7 @@ void formatrequest(char *buf, InfluxClient *client);
 int influx_send(InfluxClient *client, WiFiClient *net);
 // reset_client is used to safely clear out the  buffered data.
 void reset_client(InfluxClient *client);
+
+void parse_http_response(char *body, HttpResponse *resp);
 
 #endif //WANNETIOT_BEDROOM_HTTPCLIENT_H

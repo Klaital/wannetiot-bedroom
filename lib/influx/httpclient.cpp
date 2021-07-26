@@ -26,7 +26,6 @@ void formatrequest(char *buf, InfluxClient *client) {
             client->bucket, client->org, client->token, client->host, client->content_length);
     // Append the body of the request
     for(i=0; i < client->points; i++) {
-        Serial.println(client->data[i]);
         strcat(buf, "\n");
         strcat(buf, client->data[i]);
     }
@@ -47,9 +46,7 @@ int add_point(InfluxClient *c, Point *p) {
 
     // Copy the Point into the buffer
     pointbuf[0] = '\0';
-    Serial.print("Buffering point: ");
     point_to_str(pointbuf, p);
-    Serial.println(pointbuf);
     c->data[c->points] = (char*)malloc(strlen(pointbuf)+1);
     if (c->data[c->points] == nullptr) {
         Serial.println("Failed to allocate ram for the point");
@@ -64,9 +61,9 @@ int add_point(InfluxClient *c, Point *p) {
 }
 
 int influx_send(InfluxClient *client, WiFiClient *net) {
-#ifdef DEBUG
-    char debugbuf[1024];
-#endif
+    char debugbuf[2048];
+    HttpResponse resp{};
+
     // Only run the HTTP connection when the buffer is full enough
     if (client->points < INFLUX_BUFFER_SIZE-2) {
         return 0;
@@ -80,20 +77,21 @@ int influx_send(InfluxClient *client, WiFiClient *net) {
     reset_client(client);
 
     //  run the http connection
-#ifdef DEBUG
-    Serial.println("---------------------\nSending HTTP Request:");
-    Serial.println(requeststr);
-#endif
-
     if (net->connect(client->host, client->port)) {
         net->print(requeststr);
         net->print("\n\n");
-#ifdef DEBUG
         // Read the HTTP response to check the status code
         net->readBytes(debugbuf, 1024);
-        Serial.println("---------------------\nGGot HTTP Response:");
-        Serial.println(debugbuf);
-#endif
+        parse_http_response(debugbuf, &resp);
+        Serial.print("HTTP Response from Influx: ");
+        Serial.print(resp.code);
+        Serial.print(" ");
+        Serial.println(resp.status);
+        if (resp.code >= 300) {
+            Serial.println();
+            Serial.println(resp.body);
+        }
+
     } else {
         Serial.println("Failed to open TCP connection");
         return 0;
@@ -110,4 +108,18 @@ void reset_client(InfluxClient *client) {
         free(client->data[i]);
     }
     client->points = 0;
+}
+
+void parse_http_response(char *body, HttpResponse *resp) {
+    char *token;
+    char *copy = (char*)malloc(strlen(body)+1);
+    strcpy(copy, body);
+
+    token = strtok(copy, " "); // Discard the first token "HTTP/1.1"
+    token = strtok(0, " ");
+    resp->code = strtoul(token, nullptr, 10);
+    token = strtok(0, "\n");
+    strcpy(resp->status, token);
+    free(copy);
+    strcpy(resp->body, body);
 }

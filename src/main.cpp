@@ -8,7 +8,9 @@
 
 int status = WL_IDLE_STATUS;
 char ssid[] = SECRET_SSID;
+#ifdef DEBUG
 char debugbuf[1024];
+#endif
 char timebuf[sizeof "2011-10-08-07:07:09Z"];
 InfluxClient influx_client;
 WiFiClient wifi_client;
@@ -37,9 +39,11 @@ void record_metrics() {
         return;
     }
 
+#ifdef DEBUG
     strftime(timebuf, sizeof(timebuf), "%FT%TZ", gmtime(&current_reading.timestamp));
     sprintf(debugbuf, "Recording metrics (%s): temp=%f, humidity=%f, pm2.5=%f, rssi=%ld", timebuf, current_reading.temp, current_reading.humidity, current_reading.pm25, current_reading.rssi);
     Serial.println(debugbuf);
+#endif
 
     // WiFi stats
     init_point(&p);

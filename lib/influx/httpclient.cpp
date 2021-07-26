@@ -61,7 +61,9 @@ int add_point(InfluxClient *c, Point *p) {
 }
 
 int influx_send(InfluxClient *client, WiFiClient *net) {
+#ifdef DEBUG
     char debugbuf[2048];
+#endif
     HttpResponse resp{};
 
     // Only run the HTTP connection when the buffer is full enough
@@ -78,8 +80,12 @@ int influx_send(InfluxClient *client, WiFiClient *net) {
 
     //  run the http connection
     if (net->connect(client->host, client->port)) {
+#ifdef DEBUG
+        Serial.println(requeststr);
+#endif
         net->print(requeststr);
         net->print("\n\n");
+#ifdef DEBUG
         // Read the HTTP response to check the status code
         net->readBytes(debugbuf, 1024);
         parse_http_response(debugbuf, &resp);
@@ -91,7 +97,7 @@ int influx_send(InfluxClient *client, WiFiClient *net) {
             Serial.println();
             Serial.println(resp.body);
         }
-
+#endif
     } else {
         Serial.println("Failed to open TCP connection");
         return 0;
@@ -108,6 +114,7 @@ void reset_client(InfluxClient *client) {
         free(client->data[i]);
     }
     client->points = 0;
+    client->content_length = 0;
 }
 
 void parse_http_response(char *body, HttpResponse *resp) {

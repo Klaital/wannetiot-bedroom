@@ -54,6 +54,9 @@ int add_point(InfluxClient *c, Point *p) {
     }
     strcpy(c->data[c->points], pointbuf);
 
+//#ifdef DEBUG
+    Serial.println(pointbuf);
+//#endif
     // Success!
     c->points += 1;
     c->content_length += strlen(pointbuf) + 1;

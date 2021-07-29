@@ -31,62 +31,27 @@ void formatrequest(char *buf, InfluxClient *client) {
     }
 }
 
-int add_point(InfluxClient *c, Point *p) {
-    char pointbuf[256];
-    // If the buffer is full, refuse
-    if (c->points == INFLUX_BUFFER_SIZE-1) {
-        Serial.println("Buffer full!");
+
+int influx_send(InfluxClient *client, WiFiClient *net, char *body) {
+    if (body == nullptr) {
         return 0;
     }
-    // If the Point is invalid for transmission, refuse
-    if (!validate_point(p)) {
-        Serial.println("Invalid data point");
-        return 0;
-    }
+    char requeststr[2048];
 
-    // Copy the Point into the buffer
-    pointbuf[0] = '\0';
-    point_to_str(pointbuf, p);
-    c->data[c->points] = (char*)malloc(strlen(pointbuf)+1);
-    if (c->data[c->points] == nullptr) {
-        Serial.println("Failed to allocate ram for the point");
-        return 0;
-    }
-    strcpy(c->data[c->points], pointbuf);
-
-//#ifdef DEBUG
-    Serial.println(pointbuf);
-//#endif
-    // Success!
-    c->points += 1;
-    c->content_length += strlen(pointbuf) + 1;
-    return 1;
-}
-
-int influx_send(InfluxClient *client, WiFiClient *net) {
 #ifdef DEBUG
-    char debugbuf[2048];
-#endif
     HttpResponse resp{};
-
-    // Only run the HTTP connection when the buffer is full enough
-    if (client->points < INFLUX_BUFFER_SIZE-2) {
-        return 0;
-    }
-    size_t bytes = requestsize(client);
-    char *requeststr = (char*)malloc(bytes);
-    if (requeststr == nullptr) {
-        Serial.println("OOM: failed to allocate string for influx request");
-    }
+#endif
+    client->content_length = strlen(body);
     formatrequest(requeststr, client);
-    reset_client(client);
 
     //  run the http connection
     if (net->connect(client->host, client->port)) {
 #ifdef DEBUG
-        Serial.println(requeststr);
+        Serial.println(body);
 #endif
         net->print(requeststr);
+        net->print("\n");
+        net->print(body);
         net->print("\n\n");
 #ifdef DEBUG
         // Read the HTTP response to check the status code
@@ -105,19 +70,8 @@ int influx_send(InfluxClient *client, WiFiClient *net) {
         Serial.println("Failed to open TCP connection");
         return 0;
     }
-    free(requeststr);
 
     return 1;
-}
-
-
-void reset_client(InfluxClient *client) {
-    int i;
-    for (i=0; i < client->points; i++) {
-        free(client->data[i]);
-    }
-    client->points = 0;
-    client->content_length = 0;
 }
 
 void parse_http_response(char *body, HttpResponse *resp) {

@@ -25,12 +25,15 @@
 // Analog Sensors: define which pins for Temperature, Humidity, etc
 #define DHTTYPE DHT22
 
+// How many minutes between dust sensor cycles?
+#define SDS_WORKING_PERIOD 10
+
 //
 // Pin Config
 //
 
 // Temperature & Humidity DHT22
-#define DHT_PIN 1
+#define DHTSerial 1
 // RF Remote Control receiver
 #define RF_PIN0 A1
 #define RF_PIN1 A2

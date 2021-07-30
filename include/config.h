@@ -17,9 +17,7 @@
 #define METRIC_PM10 "pm10"
 #define METRIC_RSSI "rssi"
 
-#define TAG_NAME_NODE "node"
 #define TAG_VALUE_NODE "bed2"
-#define TAG_NAME_LOCATION "loc"
 #define TAG_VALUE_LOCATION "mbed"
 
 // Analog Sensors: define which pins for Temperature, Humidity, etc

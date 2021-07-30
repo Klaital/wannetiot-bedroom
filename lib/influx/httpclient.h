@@ -14,7 +14,6 @@
 struct InfluxClient{
     char *host;
     long port;
-    char *data[INFLUX_BUFFER_SIZE];
     int points;
     size_t content_length;
 

@@ -27,7 +27,7 @@ private:
     bool reads_rssi;
 
 
-    char influx_buffer[INFLUX_STRING_MAX][INFLUX_BUFFER_SIZE];
+    char influx_buffer[INFLUX_BUFFER_SIZE+1][INFLUX_STRING_MAX];
     int buffered_count;
     int record_frequency;
     time_t last_record;

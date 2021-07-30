@@ -6,6 +6,8 @@
 #include "httpclient.h"
 #include <suite.h>
 
+DHT dht(DHTSerial, DHTTYPE);
+SdsDustSensor sds(Serial1);
 SensorSuite sensors((char*)TAG_VALUE_NODE, (char*)TAG_VALUE_LOCATION);
 
 int status = WL_IDLE_STATUS;
@@ -25,16 +27,8 @@ void read_wifi_strength() {
 // read_atmo queries the temperature and humidity analog sensors
 void read_atmo() {
     // The SensorSuite library handles the different cooldown times for the different sensors
-    float t = sensors.read_temperature();
-#ifdef DEBUG
-    Serial.print("Got Temperature: ");
-    Serial.println(t);
-#endif
-    t = sensors.read_dust();
-#ifdef DEBUG
-    Serial.print("Got PM2.5: ");
-    Serial.println(t);
-#endif
+    sensors.read_temperature();
+    sensors.read_dust();
 }
 
 struct RemoteState {
@@ -85,12 +79,12 @@ char metricbuf[16];
 char http_body[2048];
 void record_metrics() {
     int suite_status = sensors.snapshot(WiFi.getTime());
-#ifdef DEBUG
-    Serial.print("Sensor snapshot status ");
-    Serial.println(suite_status);
-#endif
     if (suite_status > 1) {
         sensors.read_influx_buffer(http_body);
+#ifdef DEBUG
+        Serial.println("Prepared HTTP payload:");
+        Serial.println(http_body);
+#endif
         influx_send(&influx_client, &wifi_client, http_body);
     }
 }
@@ -120,10 +114,8 @@ void setup() {
 #endif
     // Set up the sensor suite
     // Initialize the temperature & humidity sensor
-    DHT dht(DHTSerial, DHTTYPE);
     sensors.enable_dht(&dht);
     // Initialize the Airborne Particulate sensor
-    SdsDustSensor sds(Serial1);
     sensors.enable_sds(&sds, SDS_WORKING_PERIOD);
     // Configure the sensor suite to check the WiFi stats
     sensors.enable_wifi();
@@ -169,15 +161,12 @@ void setup() {
 void loop() {
     // read sensors
     read_wifi_strength();
-    Serial.println("Reading atmo sensors");
     read_atmo();
 
     // every-so-often, write the metrics to Influx
-    Serial.println("Recording metrics");
     record_metrics();
 
     // Read the RF remote, and then operate the lights accordingly
-    Serial.println("Checking remote");
     read_remote();
     run_lights();
 }

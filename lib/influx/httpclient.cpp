@@ -11,24 +11,10 @@ void init_client(InfluxClient *c) {
     c->points = 0;
 }
 
-size_t requestsize(InfluxClient *client) {
-    int i;
-    size_t bytes = 150 + 20 + 88 + 15 + 5; // boilerplate + org/bucket + token + hostname + content-length
-    for (i = 0; i < client->points; i++) {
-        bytes += strlen(client->data[i]) + 1;
-    }
-    return bytes + client->points;
-}
-
 void formatrequest(char *buf, InfluxClient *client) {
     int i;
     sprintf(buf, "POST /api/v2/write?bucket=%s&org=%s&precision=s HTTP/1.1\nAuthorization: Token %s\nHost: %s\nContent-Length: %d\n",
             client->bucket, client->org, client->token, client->host, client->content_length);
-    // Append the body of the request
-    for(i=0; i < client->points; i++) {
-        strcat(buf, "\n");
-        strcat(buf, client->data[i]);
-    }
 }
 
 

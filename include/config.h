@@ -18,7 +18,7 @@
 #define METRIC_RSSI "rssi"
 
 #define TAG_NAME_NODE "node"
-#define TAG_VALUE_NODE "bedroom2"
+#define TAG_VALUE_NODE "bed2"
 #define TAG_NAME_LOCATION "loc"
 #define TAG_VALUE_LOCATION "mbed"
 

@@ -18,6 +18,9 @@ SensorSuite::SensorSuite(char *node_id, char *location_name, int record_frequenc
     this->pm25 = this->pm10 = 0.0;
     this->sds_working_interval = -1;
     this->reads_dust = false;
+
+    strcpy(this->Location, location_name);
+    strcpy(this->NodeId, node_id);
 }
 void SensorSuite::enable_dht(DHT *sensor) {
     if (sensor != nullptr) {
@@ -45,13 +48,11 @@ void SensorSuite::begin() {
 
 float SensorSuite::read_temperature() {
     if (this->dht_sensor != nullptr) {
-        Serial.println("Reading temperature & humidity from DHT");
-        this->temperature = this->dht_sensor->readTemperature();
+        this->temperature = this->dht_sensor->readTemperature(true);
         if (isnan(this->temperature)) {
             Serial.println("Error reading temperature");
             return 0.0;
         }
-        Serial.println("Got temperature from DHT");
         this->humidity = this->dht_sensor->readHumidity();
         if (isnan(this->humidity)) {
             Serial.println("Error reading humidity");
@@ -144,7 +145,7 @@ int SensorSuite::snapshot(time_t now) {
     this->last_record = now;
 
     // Success!
-    if (this->buffered_count == INFLUX_BUFFER_SIZE) {
+    if (this->buffered_count >= INFLUX_BUFFER_SIZE) {
         return 2;
     }
     return 1;

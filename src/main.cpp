@@ -106,7 +106,9 @@ void run_lights() {
 // record_metrics sends the metrics recorded so far to Influx if it has been long enough
 char metricbuf[16];
 char http_body[2048];
+
 void record_metrics() {
+    error err;
     int suite_status = sensors.snapshot(WiFi.getTime());
     if (suite_status > 1) {
         sensors.read_influx_buffer(http_body);
@@ -114,7 +116,8 @@ void record_metrics() {
         Serial.println("Prepared HTTP payload:");
         Serial.println(http_body);
 #endif
-        if (!influx_send(&influx_client, &wifi_client, http_body)) {
+        err = influx_send(&influx_client, &wifi_client, http_body);
+        if (err == ERR_NO_CONNECTION) {
             Serial.println("Failed to send data to Influx. Re-establishing wifi connection.");
             status = WiFi.begin(ssid, SECRET_PASS);
             delay(5000);

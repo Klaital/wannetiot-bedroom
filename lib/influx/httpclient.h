@@ -6,15 +6,20 @@
 #define WANNETIOT_BEDROOM_HTTPCLIENT_H
 
 #include "point.h"
+#include "error.h"
 #include <WiFiNINA.h>
 #include <SPI.h>
+
+
+extern error ERR_NO_CONNECTION;
+extern error ERR_NO_PAYLOAD;
+
 
 #define INFLUX_BUFFER_SIZE 10
 
 struct InfluxClient{
     char *host;
     long port;
-    int points;
     size_t content_length;
 
     char *token;
@@ -46,7 +51,7 @@ void formatrequest(char *buf, InfluxClient *client);
 //int influx_send(InfluxClient *client, WiFiClient *net);
 //
 // influx_send transmits the given pre-formatted data points
-int influx_send(InfluxClient *client, WiFiClient *net, char *body);
+error influx_send(InfluxClient *client, WiFiClient *net, char *body);
 
 //// reset_client is used to safely clear out the  buffered data.
 //void reset_client(InfluxClient *client);

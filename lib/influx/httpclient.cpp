@@ -6,9 +6,12 @@
 #include <malloc.h>
 #include "httpclient.h"
 
+
+error ERR_NO_CONNECTION = "no network connection";
+error ERR_NO_PAYLOAD = "no payload";
+
 void init_client(InfluxClient *c) {
     c->port = 8086;
-    c->points = 0;
 }
 
 void formatrequest(char *buf, InfluxClient *client) {
@@ -18,9 +21,9 @@ void formatrequest(char *buf, InfluxClient *client) {
 }
 
 
-int influx_send(InfluxClient *client, WiFiClient *net, char *body) {
+error influx_send(InfluxClient *client, WiFiClient *net, char *body) {
     if (body == nullptr) {
-        return 0;
+        return ERR_NO_PAYLOAD;
     }
     char requeststr[2048];
 
@@ -54,10 +57,10 @@ int influx_send(InfluxClient *client, WiFiClient *net, char *body) {
 #endif
     } else {
         Serial.println("Failed to open TCP connection");
-        return 0;
+        return ERR_NO_CONNECTION;
     }
 
-    return 1;
+    return nullptr;
 }
 
 void parse_http_response(char *body, HttpResponse *resp) {

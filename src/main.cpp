@@ -45,28 +45,57 @@ void read_remote() {
     remoteButtons.C = digitalRead(RF_PIN2);
     remoteButtons.D = digitalRead(RF_PIN3);
 }
+
+struct LightSettings {
+    int Red;
+    int Green;
+    int White;
+    int Blue;
+};
+void set_light_state(LightSettings &newState) {
+    analogWrite(LED_PIN_R, newState.Red);
+    analogWrite(LED_PIN_G, newState.Green);
+    analogWrite(LED_PIN_W, newState.White);
+    analogWrite(LED_PIN_B, newState.Blue);
+}
+
+LightSettings SOFT_WHITE = LightSettings{
+    .Red =  25,
+    .Green = 0,
+    .White = 255,
+    .Blue = 0
+};
+LightSettings SOFT_WHITE_DIM = LightSettings{
+    .Red =  2,
+    .Green = 0,
+    .White = 25,
+    .Blue = 0
+};
+LightSettings LIGHTS_OFF = LightSettings{
+    .Red =  0,
+    .Green = 0,
+    .White = 0,
+    .Blue = 0
+};
 // run_lights sets the output values to operate the attached LED strip based on the Remote Control values
 void run_lights() {
     if (remoteButtons.A) {
         remoteButtons.B = 0;
         remoteButtons.C = 0;
         Serial.println("Turning on the lights");
-        analogWrite(5, 255);
-        // TODO: actually turn the lights on
+        set_light_state(SOFT_WHITE);
     }
     if (remoteButtons.B) {
         remoteButtons.A = 0;
         remoteButtons.C = 0;
         Serial.println("Dimming lights");
-        analogWrite(5, 25);
-        // TODO: actually turn the lights on
+        set_light_state(SOFT_WHITE_DIM);
     }
     if (remoteButtons.C) {
         remoteButtons.A = 0;
         remoteButtons.B = 0;
         Serial.println("Turning off the lights");
-        analogWrite(5, 0);
-        // TODO: actually turn the lights off
+        set_light_state(LIGHTS_OFF);
     }
     if (remoteButtons.D) {
         Serial.println("Activating pager");
@@ -85,7 +114,11 @@ void record_metrics() {
         Serial.println("Prepared HTTP payload:");
         Serial.println(http_body);
 #endif
-        influx_send(&influx_client, &wifi_client, http_body);
+        if (!influx_send(&influx_client, &wifi_client, http_body)) {
+            Serial.println("Failed to send data to Influx. Re-establishing wifi connection.");
+            status = WiFi.begin(ssid, SECRET_PASS);
+            delay(5000);
+        }
     }
 }
 

@@ -10,21 +10,40 @@
 #include <WiFiNINA.h>
 #include <SPI.h>
 
-
 extern error ERR_NO_CONNECTION;
 extern error ERR_NO_PAYLOAD;
-
+extern error ERR_NO_WIFI;
 
 #define INFLUX_BUFFER_SIZE 10
 
-struct InfluxClient{
+struct InfluxConfig {
+    char *token;
+    char *bucket;
+    char *org;
+};
+
+struct SlackConfig {
+    char *token;
+    char *channel;
+    void generate_request_body(char *buf, char *message);
+};
+
+class HttpClient{
+public:
+    HttpClient();
+    WiFiClient *net;
+
     char *host;
     long port;
-    size_t content_length;
 
-    char *token;
-    char *org;
-    char *bucket;
+    char *body;
+    char *endpoint;
+    char *method;
+
+    void generate_influx_request(char *buf, InfluxConfig &influx);
+    void generate_slack_request(char *buf, SlackConfig &slack);
+
+    error exec(char *request);
 };
 
 struct HttpResponse {
@@ -33,28 +52,9 @@ struct HttpResponse {
     char body[256];
 };
 
-// init_request initializes the default values for a HttpRequest object
-void init_client(InfluxClient *c);
 
-//// add_point queues a data point for later transmission
-//int add_point(InfluxClient *c, Point *p);
-//
-//// requestsize calculates a fairly safe buffer length for using with formatrequest
-//size_t requestsize(InfluxClient *client);
-//
-//// formatrequest generates the HTTP request string
-void formatrequest(char *buf, InfluxClient *client);
-//
-//// influx_send transmits the buffered data points if the buffer is full enough. No-op if the buffer still has space left.
-//// The accumulated data buffer is free'd for future refilling.
-//// The return value indicates whether any IO was actually performed.
-//int influx_send(InfluxClient *client, WiFiClient *net);
-//
 // influx_send transmits the given pre-formatted data points
-error influx_send(InfluxClient *client, WiFiClient *net, char *body);
-
-//// reset_client is used to safely clear out the  buffered data.
-//void reset_client(InfluxClient *client);
+error influx_send(HttpClient *client, WiFiClient *net, char *body);
 
 void parse_http_response(char *body, HttpResponse *resp);
 

@@ -9,39 +9,57 @@
 
 error ERR_NO_CONNECTION = "no network connection";
 error ERR_NO_PAYLOAD = "no payload";
+error ERR_NO_WIFI = "null wifi";
 
-void init_client(InfluxClient *c) {
-    c->port = 8086;
+HttpClient::HttpClient() {
+    this->port = 80;
 }
 
-void formatrequest(char *buf, InfluxClient *client) {
-    int i;
-    sprintf(buf, "POST /api/v2/write?bucket=%s&org=%s&precision=s HTTP/1.1\nAuthorization: Token %s\nHost: %s\nContent-Length: %d\n",
-            client->bucket, client->org, client->token, client->host, client->content_length);
+void HttpClient::generate_influx_request(char *buf, InfluxConfig &influx) {
+    sprintf(buf, "%s %s?bucket=%s&org=%s&precision=s HTTP/1.1\nAuthorization: Token %s\nHost: %s\nContent-Length: %d\n%s\n\n",
+            this->method, this->endpoint,
+            influx.bucket, influx.org, influx.token,
+            this->host,
+            strlen(this->body),
+            this->body);
+}
+void SlackConfig::generate_request_body(char *buf, char *message) {
+    sprintf(buf, "{\"channel\":\"%s\",\"blocks\":{\"type\":\"section\", \"text\":{\"type\":\"mrkdwn\",\"text\":\"%s\"}}}",
+            this->channel,
+            message);
+}
+void HttpClient::generate_slack_request(char *buf, SlackConfig &slack) {
+    sprintf(buf, "%s %s HTTP/1.1\nContent-Type: application/json\nAuthorization: Bearer %s\nHost: %s\nContent-Length: %d\n%s\n\n",
+            this->method, this->endpoint,
+            slack.token, this->host,
+            strlen(this->body),
+            this->body);
 }
 
-
-error influx_send(InfluxClient *client, WiFiClient *net, char *body) {
-    if (body == nullptr) {
+error HttpClient::exec(char *request) {
+    if (request == nullptr) {
         return ERR_NO_PAYLOAD;
     }
-    char requeststr[2048];
+    if (this->net == nullptr) {
+        return ERR_NO_WIFI;
+    }
 
 #ifdef DEBUG
     HttpResponse resp{};
 #endif
-    client->content_length = strlen(body);
-    formatrequest(requeststr, client);
 
     //  run the http connection
-    if (net->connect(client->host, client->port)) {
+    int connState;
+    if (this->port == 443) {
+        connState = net->connectSSL(this->host, this->port);
+    } else {
+        connState = net->connect(this->host, this->port);
+    }
+    if (connState) {
 #ifdef DEBUG
         Serial.println(body);
 #endif
-        net->print(requeststr);
-        net->print("\n");
-        net->print(body);
-        net->print("\n\n");
+        net->print(request);
 #ifdef DEBUG
         // Read the HTTP response to check the status code
         net->readBytes(debugbuf, 1024);

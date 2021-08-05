@@ -64,9 +64,14 @@ public:
     void enable_wifi();
     long read_rssi(); // returns the WiFiClient's rssi measurement
 
-    int snapshot(time_t now); // grab the sensor values and record them as an Influx Measurement
+    // snapshot will read the sensor values and record them as an
+    // Influx Measurement string.
+    int snapshot(time_t now);
 
-    void read_influx_buffer(char *outbuf); // reset the buffer index after writing the data points to Influx
+    // read_influx_buffer will copy the buffered data lines into a
+    // single string suitable for sending over the wire to Influx.
+    // The internal buffer is reset on success.
+    void read_influx_buffer(char *outbuf);
 
     // begin initializes all the configured sensor libraries
     void begin();

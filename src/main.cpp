@@ -6,6 +6,11 @@
 #include "httpclient.h"
 #include <suite.h>
 
+InfluxConfig influxConfig;
+HttpClient influxClient;
+SlackConfig slackConfig;
+HttpClient slackClient;
+
 DHT dht(DHTSerial, DHTTYPE);
 SdsDustSensor sds(Serial1);
 SensorSuite sensors((char*)TAG_VALUE_NODE, (char*)TAG_VALUE_LOCATION);
@@ -15,7 +20,6 @@ char ssid[] = SECRET_SSID;
 #ifdef DEBUG
 char debugbuf[1024];
 #endif
-InfluxClient influx_client;
 WiFiClient wifi_client;
 
 
@@ -105,7 +109,8 @@ void run_lights() {
 
 // record_metrics sends the metrics recorded so far to Influx if it has been long enough
 char metricbuf[16];
-char http_body[2048];
+char http_body[1024];
+char http_request[2048];
 
 void record_metrics() {
     error err;
@@ -116,7 +121,9 @@ void record_metrics() {
         Serial.println("Prepared HTTP payload:");
         Serial.println(http_body);
 #endif
-        err = influx_send(&influx_client, &wifi_client, http_body);
+        influxClient.body = http_body;
+        influxClient.generate_influx_request(http_request, influxConfig);
+        err = influxClient.exec(http_request);
         if (err == ERR_NO_CONNECTION) {
             Serial.println("Failed to send data to Influx. Re-establishing wifi connection.");
             status = WiFi.begin(ssid, SECRET_PASS);
@@ -186,12 +193,23 @@ void setup() {
     // initialize digital pin LED_BUILTIN as an output.
     pinMode(LED_BUILTIN, OUTPUT);
 
-    // initialize Influx client
-    init_client(&influx_client);
-    influx_client.host = (char*)INFLUX_HOST;
-    influx_client.token = (char*)INFLUX_TOKEN;
-    influx_client.org = (char*)INFLUX_ORG;
-    influx_client.bucket = (char*)INFLUX_BUCKET;
+    // initialize HTTP Client & service configs
+    slackConfig.token = (char*)SLACK_BOT_TOKEN;
+    slackConfig.channel = (char*)SLACK_PAGER_CHANNEL;
+    slackClient.port = SLACK_PORT;
+    slackClient.host = (char*)SLACK_HOST;
+    slackClient.method = (char*)"POST";
+    slackClient.endpoint = (char*)"/api/chat.postMessage";
+    slackClient.net = &wifi_client;
+
+    influxConfig.token = (char*)INFLUX_TOKEN;
+    influxConfig.bucket = (char*)INFLUX_BUCKET;
+    influxConfig.org = (char*)INFLUX_ORG;
+    influxClient.port = INFLUX_PORT;
+    influxClient.host = (char*)INFLUX_HOST;
+    influxClient.method = (char*)"POST";
+    influxClient.endpoint = (char*)"/api/v2/write";
+    influxClient.net = &wifi_client;
 }
 
 void loop() {

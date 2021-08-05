@@ -7,15 +7,14 @@
 #define DEBUG 1
 
 #define INFLUX_WRITE_INTERVAL 5.0
+#define INFLUX_HOST "klaital.com"
+#define INFLUX_PORT 8086
+#define INFLUX_ORG "klaital.com"
+#define INFLUX_BUCKET "wannetiot"
 
-#define MEASUREMENT_WIFI "wifi"
-#define MEASUREMENT_ATMO "atmo"
-
-#define METRIC_TEMP "temp"
-#define METRIC_HUMIDITY "humidity"
-#define METRIC_PM25 "pm25"
-#define METRIC_PM10 "pm10"
-#define METRIC_RSSI "rssi"
+#define SLACK_HOST "slack.com"
+#define SLACK_PORT 443
+#define SLACK_PAGER_CHANNEL "@chris"
 
 #define TAG_VALUE_NODE "bed2"
 #define TAG_VALUE_LOCATION "mbed"
@@ -38,9 +37,9 @@
 #define RF_PIN2 A3
 #define RF_PIN3 A4
 // LED Strip control
-#define LED_PIN_R 2
-#define LED_PIN_G 3
-#define LED_PIN_B 4
-#define LED_PIN_W 5
+#define LED_PIN_R 5
+#define LED_PIN_G 4
+#define LED_PIN_W 3
+#define LED_PIN_B 2
 
 #endif //WANNETIOT_BEDROOM_CONFIG_H

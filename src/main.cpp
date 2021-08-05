@@ -10,6 +10,10 @@ InfluxConfig influxConfig;
 HttpClient influxClient;
 SlackConfig slackConfig;
 HttpClient slackClient;
+char slackBody[256];
+char http_body[1024];
+char http_request[2048];
+HttpResponse resp;
 
 DHT dht(DHTSerial, DHTTYPE);
 SdsDustSensor sds(Serial1);
@@ -83,6 +87,7 @@ LightSettings LIGHTS_OFF = LightSettings{
 };
 // run_lights sets the output values to operate the attached LED strip based on the Remote Control values
 void run_lights() {
+    error err;
     if (remoteButtons.A) {
         remoteButtons.B = 0;
         remoteButtons.C = 0;
@@ -103,14 +108,15 @@ void run_lights() {
     }
     if (remoteButtons.D) {
         Serial.println("Activating pager");
-        // TODO: actually call Slack
+        slackClient.generate_slack_request(http_request, slackConfig);
+        err = slackClient.exec(http_request, &resp);
+        if (err != nullptr) {
+            Serial.print("Error executing slack request: ");
+            Serial.println(err);
+        }
     }
 }
 
-// record_metrics sends the metrics recorded so far to Influx if it has been long enough
-char metricbuf[16];
-char http_body[1024];
-char http_request[2048];
 
 void record_metrics() {
     error err;
@@ -123,11 +129,14 @@ void record_metrics() {
 #endif
         influxClient.body = http_body;
         influxClient.generate_influx_request(http_request, influxConfig);
-        err = influxClient.exec(http_request);
+        err = influxClient.exec(http_request, &resp);
         if (err == ERR_NO_CONNECTION) {
             Serial.println("Failed to send data to Influx. Re-establishing wifi connection.");
             status = WiFi.begin(ssid, SECRET_PASS);
             delay(5000);
+        } else if (err != nullptr) {
+            Serial.print("Error executing influx request: ");
+            Serial.println(err);
         }
     }
 }
@@ -201,6 +210,8 @@ void setup() {
     slackClient.method = (char*)"POST";
     slackClient.endpoint = (char*)"/api/chat.postMessage";
     slackClient.net = &wifi_client;
+    slackConfig.generate_request_body(slackBody, (char*)SLACK_PAGER_MESSAGE);
+    slackClient.body = slackBody;
 
     influxConfig.token = (char*)INFLUX_TOKEN;
     influxConfig.bucket = (char*)INFLUX_BUCKET;

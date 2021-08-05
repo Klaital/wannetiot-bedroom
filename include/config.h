@@ -4,7 +4,7 @@
 
 #ifndef WANNETIOT_BEDROOM_CONFIG_H
 #define WANNETIOT_BEDROOM_CONFIG_H
-#define DEBUG 1
+//#define DEBUG 1
 
 #define INFLUX_WRITE_INTERVAL 5.0
 #define INFLUX_HOST "klaital.com"
@@ -15,6 +15,7 @@
 #define SLACK_HOST "slack.com"
 #define SLACK_PORT 443
 #define SLACK_PAGER_CHANNEL "@chris"
+#define SLACK_PAGER_MESSAGE "you have been summoned!"
 
 #define TAG_VALUE_NODE "bed2"
 #define TAG_VALUE_LOCATION "mbed"

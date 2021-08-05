@@ -27,6 +27,11 @@ struct SlackConfig {
     char *channel;
     void generate_request_body(char *buf, char *message);
 };
+struct HttpResponse {
+    unsigned long code;
+    char status[16];
+    char body[256];
+};
 
 class HttpClient{
 public:
@@ -43,14 +48,9 @@ public:
     void generate_influx_request(char *buf, InfluxConfig &influx);
     void generate_slack_request(char *buf, SlackConfig &slack);
 
-    error exec(char *request);
+    error exec(char *request, HttpResponse *response);
 };
 
-struct HttpResponse {
-    unsigned long code;
-    char status[16];
-    char body[256];
-};
 
 
 // influx_send transmits the given pre-formatted data points

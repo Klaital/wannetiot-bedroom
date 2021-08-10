@@ -6,6 +6,15 @@
 #include "httpclient.h"
 #include <suite.h>
 
+struct LightSettings {
+    int Red;
+    int Green;
+    int White;
+    int Blue;
+};
+
+
+LightSettings lightCurrentState;
 InfluxConfig influxConfig;
 HttpClient influxClient;
 SlackConfig slackConfig;
@@ -14,6 +23,37 @@ char slackBody[256];
 char http_body[1024];
 char http_request[2048];
 HttpResponse resp;
+
+LightSettings SOFT_WHITE = LightSettings{
+    .Red =  25,
+    .Green = 0,
+    .White = 255,
+    .Blue = 0
+};
+LightSettings SOFT_WHITE_DIM = LightSettings{
+    .Red =  2,
+    .Green = 0,
+    .White = 25,
+    .Blue = 0
+};
+LightSettings LIGHTS_BLUE = LightSettings{
+    .Red =  2,
+    .Green = 0,
+    .White = 0,
+    .Blue = 255
+};
+LightSettings LIGHTS_RED = LightSettings{
+    .Red =  255,
+    .Green = 0,
+    .White = 0,
+    .Blue = 0
+};
+LightSettings LIGHTS_OFF = LightSettings{
+    .Red =  0,
+    .Green = 0,
+    .White = 0,
+    .Blue = 0
+};
 
 DHT dht(DHTSerial, DHTTYPE);
 SdsDustSensor sds(Serial1);
@@ -54,37 +94,36 @@ void read_remote() {
     remoteButtons.D = digitalRead(RF_PIN3);
 }
 
-struct LightSettings {
-    int Red;
-    int Green;
-    int White;
-    int Blue;
-};
 void set_light_state(LightSettings &newState) {
+    lightCurrentState.Red = newState.Red;
+    lightCurrentState.Green = newState.Green;
+    lightCurrentState.White = newState.White;
+    lightCurrentState.Blue = newState.Blue;
     analogWrite(LED_PIN_R, newState.Red);
     analogWrite(LED_PIN_G, newState.Green);
     analogWrite(LED_PIN_W, newState.White);
     analogWrite(LED_PIN_B, newState.Blue);
 }
 
-LightSettings SOFT_WHITE = LightSettings{
-    .Red =  25,
-    .Green = 0,
-    .White = 255,
-    .Blue = 0
-};
-LightSettings SOFT_WHITE_DIM = LightSettings{
-    .Red =  2,
-    .Green = 0,
-    .White = 25,
-    .Blue = 0
-};
-LightSettings LIGHTS_OFF = LightSettings{
-    .Red =  0,
-    .Green = 0,
-    .White = 0,
-    .Blue = 0
-};
+void blink_lights(LightSettings &flashColor, int duration, int numFlashes) {
+    LightSettings lightsOriginal = lightCurrentState;
+    for (int i=0; i < numFlashes; i++) {
+        // Turn Lights Off
+        set_light_state(LIGHTS_OFF);
+        delay(duration);
+
+        // Turn Lights On
+        set_light_state(flashColor);
+        delay(duration);
+    }
+    // Turn lights off again, then reset back to original settings
+    set_light_state(LIGHTS_OFF);
+    delay(duration);
+    set_light_state(lightsOriginal);
+}
+
+
+
 // run_lights sets the output values to operate the attached LED strip based on the Remote Control values
 void run_lights() {
     error err;
@@ -113,6 +152,9 @@ void run_lights() {
         if (err != nullptr) {
             Serial.print("Error executing slack request: ");
             Serial.println(err);
+            blink_lights(LIGHTS_RED, 250, 2);
+        } else {
+            blink_lights(LIGHTS_BLUE, 250, 1);
         }
     }
 }
@@ -184,6 +226,7 @@ void setup() {
     pinMode(RF_PIN2, INPUT);
     pinMode(RF_PIN3, INPUT);
     pinMode(5, OUTPUT);
+    lightCurrentState = LIGHTS_OFF;
 
     // Initialize the ADC
     analogReadResolution(12);
